@@ -92,8 +92,8 @@ const int RX_PIN = 26;
 //////////////////////
 
 
-int16_t forwardMaxSpeed = 100; //前進時の最大速度
-// int16_t forwardMaxSpeed = 60; //前進時の最大速度 //OriHime-TX仕様
+// int16_t forwardMaxSpeed = 100; //前進時の最大速度
+int16_t forwardMaxSpeed = 60; //前進時の最大速度 //OriHime-TX仕様
 int16_t backwardMaxSpeed = 50;  //後退時の最大速度
 int16_t rotationMaxSpeed = 20;  //回転時の最大速度
 int16_t currentForwardSpeed = 80;
