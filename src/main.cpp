@@ -137,7 +137,7 @@ BluetoothSerial SerialBT;
 Receiver Receiv;
 
 // M5Stackのモジュールによって対応するRX,TXのピン番号が違うためM5製品とRS485モジュールに対応させてください
-auto motor_handler = MotorHandler(RX_PIN, TX_PIN); // RX,TX
+auto motor_handler = MotorHandler(TX_PIN, RX_PIN); // RX,TX
 
 const int16_t currentSpeed_MAX = 330;
 const int16_t currentSpeed_MIN = -330;
