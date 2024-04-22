@@ -81,7 +81,7 @@ Action ACTIONS[] = {
 
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "  Ver. 1.3.1"
+#define VERSION_NUMBER  "  Ver. 1.3.2"
 // -----------------------------------
 
 ////////PIN番号////////
