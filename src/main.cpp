@@ -81,7 +81,7 @@ Action ACTIONS[] = {
 
 
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "  Ver. 1.3.0"
+#define VERSION_NUMBER  "  Ver. 1.3.1"
 // -----------------------------------
 
 ////////PIN番号////////
@@ -104,14 +104,14 @@ uint8_t Brake_P = 0; //0xffを入れるとブレーキが入る その場でブ�
 uint8_t leftMotorID = 1;      // ID of Motor (default:1)
 uint8_t rightMotorID = 2;
 
-const int fwRunAdd = 5; // 平地走行モードでの回転速度の上昇数 前進
-const int runAdd = 5; //平地走行モードでの回転速度の上昇数 バック
-const int fwTurnAdd = 3;
+const int fwAcce = 5; // 平地走行モードでの回転速度の上昇数 前進
+const int acceleration = 5; //平地走行モードでの回転速度の上昇数 バック
+const int fwTurnAcce = 3;
 const int dashDeceleration = 2;    //isQuickDashActiveからの減速値  MAX:100の時は4 MAX:80の時は2a
 const int turnDeceleration = 5;
-const int turnAdd = 3; // 平地走行モードでの回転速度の上昇数 左右回転
-const int fwBrakeAdd = 4; //前進での回転速度の減少数
-const int brakeAdd = 3; //平地走行モードでの回転速度の減少数 30
+const int turnAcce = 3; // 平地走行モードでの回転速度の上昇数 左右回転
+const int fwDeceleration = 4; //前進での回転速度の減少数
+const int brakeDeceleration = 3; //平地走行モードでの回転速度の減少数 30
 
 int modeDDT = 0; //0:停止 1:前進 2:後進 3:右回転 4:左回転 5:右斜前 6:左斜前 7:右斜後 8:左斜後
 int lastModeDDT = 0;
@@ -421,7 +421,7 @@ void loop() {
 
             if (currentSpeed > 75){
                 while (currentSpeed > 75){
-                    currentSpeed -= fwBrakeAdd;
+                    currentSpeed -= fwDeceleration;
                     moveDDT(leftMotorID, currentSpeed);
                     moveDDT(rightMotorID, -currentSpeed);
                     // moveDDT(Speed, -Speed);
@@ -445,7 +445,7 @@ void loop() {
         if (rightMotorActive == false && leftMotorActive == true) { //後退
 
             while (currentSpeed > 0) {
-                currentSpeed -= brakeAdd;
+                currentSpeed -= brakeDeceleration;
                 moveDDT(leftMotorID, -currentSpeed);
                 moveDDT(rightMotorID, currentSpeed);
                 // moveDDT(-Speed, currentSpeed);
@@ -460,7 +460,7 @@ void loop() {
         if (rightMotorActive == true && leftMotorActive == true) {  //右回転
 
             while (currentSpeed > 0) {
-                currentSpeed -= brakeAdd;
+                currentSpeed -= brakeDeceleration;
                 moveDDT(leftMotorID, -currentSpeed);
                 moveDDT(rightMotorID, currentSpeed);
                 // moveDDT(-Speed, currentSpeed);
@@ -475,7 +475,7 @@ void loop() {
         if (rightMotorActive == false && leftMotorActive == false) {  //左回転
 
             while (currentSpeed > 0) {
-                currentSpeed -= brakeAdd;
+                currentSpeed -= brakeDeceleration;
                 moveDDT(leftMotorID, -currentSpeed);
                 moveDDT(rightMotorID, -currentSpeed);
                 // moveDDT(-Speed, -Speed);
@@ -508,7 +508,7 @@ void loop() {
             }
         }
         else {
-            currentSpeed += fwRunAdd;
+            currentSpeed += fwAcce;
 
             moveDDT(leftMotorID, currentSpeed * 1.02);  //←いじらない
             moveDDT(rightMotorID, -currentSpeed);
@@ -532,7 +532,7 @@ void loop() {
         else {
             rightMotorActive = false;
             leftMotorActive = true;
-            currentSpeed += runAdd;
+            currentSpeed += acceleration;
 
             moveDDT(leftMotorID, -currentSpeed);
             moveDDT(rightMotorID, currentSpeed);
@@ -549,7 +549,7 @@ void loop() {
     if (modeDDT == 3) {  //右回転
         rightMotorActive = true;
         leftMotorActive = true;
-        currentSpeed += turnAdd;
+        currentSpeed += turnAcce;
 
         moveDDT(leftMotorID, currentSpeed);
         moveDDT(rightMotorID, currentSpeed);
@@ -565,7 +565,7 @@ void loop() {
     if (modeDDT == 4) {  //左回転
         rightMotorActive = false;
         leftMotorActive = false;
-        currentSpeed += turnAdd;
+        currentSpeed += turnAcce;
 
         moveDDT(leftMotorID, -currentSpeed);
         moveDDT(rightMotorID, -currentSpeed);
@@ -583,7 +583,7 @@ void loop() {
         leftMotorActive = true;
 
         
-        currentSpeed += fwTurnAdd;
+        currentSpeed += fwTurnAcce;
 
         moveDDT(leftMotorID, currentSpeed);
         moveDDT(rightMotorID, -currentSpeed*2/3);
@@ -601,7 +601,7 @@ void loop() {
         rightMotorActive = false;
         leftMotorActive = false;
 
-        currentSpeed += fwTurnAdd;
+        currentSpeed += fwTurnAcce;
 
         moveDDT(leftMotorID, currentSpeed*2/3);
         moveDDT(rightMotorID, -currentSpeed);
@@ -618,7 +618,7 @@ void loop() {
     if (modeDDT == 7) {  //右斜後
         rightMotorActive = true;
         leftMotorActive = true;
-        currentSpeed += runAdd;
+        currentSpeed += acceleration;
 
         moveDDT(leftMotorID, -currentSpeed);
         moveDDT(rightMotorID, currentSpeed/2);
@@ -634,7 +634,7 @@ void loop() {
     if (modeDDT == 8) {  //左斜後
         rightMotorActive = false;
         leftMotorActive = false;
-        currentSpeed += runAdd;
+        currentSpeed += acceleration;
 
         moveDDT(leftMotorID, -currentSpeed/2);
         moveDDT(rightMotorID, currentSpeed);
