@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <DDT_Motor_M15M06.h>
-#include <BluetoothSerial.h>
 
 static const int Empty = 0;
 static const int Start = 1;
@@ -37,250 +36,248 @@ static const int ButtonPressX = 31;
 static const int ButtonPressY = 32;
 static const int ButtonPressZ = 33;
 static const int ButtonOut = 34;
-struct Action {
+struct Action
+{
     int id;
     String command;
 };
 Action ACTIONS[] = {
-    { Empty, "__" },
-    { Start, "START" },
-    { ArrowPressUp, "ARROW_PRESS_UP" },
-    { ArrowPressDown, "ARROW_PRESS_DOWN" },
-    { ArrowPressLeft, "ARROW_PRESS_LEFT" },
-    { ArrowPressRight, "ARROW_PRESS_RIGHT" },
-    { ArrowPressCenter, "ARROW_PRESS_CENTER" },
-    { ArrowOut, "ARROW_OUT" },
-    { ButtonPressA, "BUTTON_PRESS_A" },
-    { ButtonPressB, "BUTTON_PRESS_B" },
-    { ButtonPressC, "BUTTON_PRESS_C" },
-    { ButtonPressD, "BUTTON_PRESS_D" },
-    { ButtonPressE, "BUTTON_PRESS_E" },
-    { ButtonPressF, "BUTTON_PRESS_F" },
-    { ButtonPressG, "BUTTON_PRESS_G" },
-    { ButtonPressH, "BUTTON_PRESS_H" },
-    { ButtonPressI, "BUTTON_PRESS_I" },
-    { ButtonPressJ, "BUTTON_PRESS_J" },
-    { ButtonPressK, "BUTTON_PRESS_K" },
-    { ButtonPressL, "BUTTON_PRESS_L" },
-    { ButtonPressM, "BUTTON_PRESS_M" },
-    { ButtonPressN, "BUTTON_PRESS_N" },
-    { ButtonPressO, "BUTTON_PRESS_O" },
-    { ButtonPressP, "BUTTON_PRESS_P" },
-    { ButtonPressQ, "BUTTON_PRESS_Q" },
-    { ButtonPressR, "BUTTON_PRESS_R" },
-    { ButtonPressS, "BUTTON_PRESS_S" },
-    { ButtonPressT, "BUTTON_PRESS_T" },
-    { ButtonPressU, "BUTTON_PRESS_U" },
-    { ButtonPressV, "BUTTON_PRESS_V" },
-    { ButtonPressW, "BUTTON_PRESS_W" },
-    { ButtonPressX, "BUTTON_PRESS_X" },
-    { ButtonPressY, "BUTTON_PRESS_Y" },
-    { ButtonPressZ, "BUTTON_PRESS_Z" },
-    { ButtonOut, "BUTTON_OUT" },
+    {Empty, "__"},
+    {Start, "START"},
+    {ArrowPressUp, "ARROW_PRESS_UP"},
+    {ArrowPressDown, "ARROW_PRESS_DOWN"},
+    {ArrowPressLeft, "ARROW_PRESS_LEFT"},
+    {ArrowPressRight, "ARROW_PRESS_RIGHT"},
+    {ArrowPressCenter, "ARROW_PRESS_CENTER"},
+    {ArrowOut, "ARROW_OUT"},
+    {ButtonPressA, "BUTTON_PRESS_A"},
+    {ButtonPressB, "BUTTON_PRESS_B"},
+    {ButtonPressC, "BUTTON_PRESS_C"},
+    {ButtonPressD, "BUTTON_PRESS_D"},
+    {ButtonPressE, "BUTTON_PRESS_E"},
+    {ButtonPressF, "BUTTON_PRESS_F"},
+    {ButtonPressG, "BUTTON_PRESS_G"},
+    {ButtonPressH, "BUTTON_PRESS_H"},
+    {ButtonPressI, "BUTTON_PRESS_I"},
+    {ButtonPressJ, "BUTTON_PRESS_J"},
+    {ButtonPressK, "BUTTON_PRESS_K"},
+    {ButtonPressL, "BUTTON_PRESS_L"},
+    {ButtonPressM, "BUTTON_PRESS_M"},
+    {ButtonPressN, "BUTTON_PRESS_N"},
+    {ButtonPressO, "BUTTON_PRESS_O"},
+    {ButtonPressP, "BUTTON_PRESS_P"},
+    {ButtonPressQ, "BUTTON_PRESS_Q"},
+    {ButtonPressR, "BUTTON_PRESS_R"},
+    {ButtonPressS, "BUTTON_PRESS_S"},
+    {ButtonPressT, "BUTTON_PRESS_T"},
+    {ButtonPressU, "BUTTON_PRESS_U"},
+    {ButtonPressV, "BUTTON_PRESS_V"},
+    {ButtonPressW, "BUTTON_PRESS_W"},
+    {ButtonPressX, "BUTTON_PRESS_X"},
+    {ButtonPressY, "BUTTON_PRESS_Y"},
+    {ButtonPressZ, "BUTTON_PRESS_Z"},
+    {ButtonOut, "BUTTON_OUT"},
 };
 
-
 // ---- S/W Version ------------------
-#define VERSION_NUMBER  "  Ver. 1.3.2"
+#define VERSION_NUMBER "  Ver. 1.4.0"
 // -----------------------------------
 
 ////////PIN番号////////
 
-const int TX_PIN = 27;
-const int RX_PIN = 26;
+const int TX_PIN = 26;
+const int RX_PIN = 27;
 
 //////////////////////
 
-
-// int16_t forwardMaxSpeed = 100; //前進時の最大速度
-int16_t forwardMaxSpeed = 60; //前進時の最大速度 //OriHime-TX仕様
-int16_t backwardMaxSpeed = 50;  //後退時の最大速度
-int16_t rotationMaxSpeed = 20;  //回転時の最大速度
-int16_t currentForwardSpeed = 80;
-int16_t currentTurnSpeed = 80;
-int16_t currentSpeed = 0;   // currentSpeed of motor
+int16_t fwMaxSpeed = 100;  // 前進時の最大速度
+int16_t bkMaxSpeed = 50;   // 後退時の最大速度
+int16_t turnMaxSpeed = 20; // 回転時の最大速度
+int16_t fwSpeed = 80;
+int16_t fwTurnSpeed = 80;
+int16_t Speed = 0;   // Speed of motor
 uint8_t Acce = 0;    // Acceleration of motor
-uint8_t Brake_P = 0; //0xffを入れるとブレーキが入る その場でブレーキが入る// Brake position of motor
-uint8_t leftMotorID = 1;      // ID of Motor (default:1)
-uint8_t rightMotorID = 2;
+uint8_t Brake_P = 0; // 0xffを入れるとブレーキが入る その場でブレーキが入る// Brake position of motor
+uint8_t leftID = 1;  // ID of Motor (default:1)
+uint8_t rightID = 2;
 
-const int forwardAcceleration = 5; // 平地走行モードでの回転速度の上昇数 前進
-const int backAcceleration = 5; //平地走行モードでの回転速度の上昇数 バック
-const int forwardTurnAcceleration = 3;
-const int dashDeceleration = 2;    //isQuickDashActiveからの減速値  MAX:100の時は4 MAX:80の時は2a
-const int turnAcceleration = 3; // 平地走行モードでの回転速度の上昇数 左右回転
-const int forwardDeceleration = 4; //前進での回転速度の減少数
-const int Deceleration = 3; //平地走行モードでの回転速度の減少数 30
+const int fwRunAdd = 5; // 平地走行モードでの回転速度の上昇数 前進
+const int runAdd = 5;   // 平地走行モードでの回転速度の上昇数 バック
+const int fwTurnAdd = 3;
+const int dashDeceleration = 2; // QDashからの減速値  MAX:100の時は4 MAX:80の時は2a
+const int turnDeceleration = 5;
+const int turnAdd = 3;    // 平地走行モードでの回転速度の上昇数 左右回転
+const int fwBrakeAdd = 4; // 前進での回転速度の減少数
+const int brakeAdd = 3;   // 平地走行モードでの回転速度の減少数 30
 
-int modeDDT = 0; //0:停止 1:前進 2:後進 3:右回転 4:左回転 5:右斜前 6:左斜前 7:右斜後 8:左斜後
+int modeDDT = 0; // 0:停止 1:前進 2:後進 3:右回転 4:左回転 5:右斜前 6:左斜前 7:右斜後 8:左斜後
 int lastModeDDT = 0;
 
 int spendTime = 0;
 const int changeModeTime = 20;
 
-int operationMode = 2;  //1:直進モードあり  2:直進モードなし
+int operationMode = 2; // 1:直進モードあり  2:直進モードなし
 
-bool rightMotorActive = false;
-bool leftMotorActive = false;
+bool flagR = false;
+bool flagL = false;
 
+bool pushUpButton = false; // true:前進ボタンを押した false:前進ボタンを離した
 
-bool isForwardButtonPressed = false;  //true:前進ボタンを押した false:前進ボタンを離した
+bool QDash = false; // 前進しながらQキーを押すと加速する
+bool lastQDash = false;
 
-bool isQuickDashActive = false; //前進しながらQキーを押すと加速する
-bool wasQuickDashActive = false;
-
-bool isForwardSpeedLimited = false;
-
-
-BluetoothSerial SerialBT;
+bool fwLimitSpeed = false;
 
 Receiver Receiv;
-
 // M5Stackのモジュールによって対応するRX,TXのピン番号が違うためM5製品とRS485モジュールに対応させてください
-auto motor_handler = MotorHandler(TX_PIN, RX_PIN); // RX,TX
+auto motor_handler = MotorHandler(RX_PIN, TX_PIN); // RX,TX
 
-const int16_t currentSpeed_MAX = 330;
-const int16_t currentSpeed_MIN = -330;
+const int16_t SPEED_MAX = 330;
+const int16_t SPEED_MIN = -330;
 
-
-void moveDDT(int id, int velocity){
+void moveDDT(int id, int velocity)
+{
     motor_handler.Control_Motor(velocity, id, Acce, Brake_P, &Receiv);
-  delay(18);    //←いじらない
+    delay(18); // ←いじらない
 }
 
+// void moveDDT(int l, int r){
+//     motor_handler.Control_Motor(l, leftID, Acce, Brake_P, &Receiv);
+//     delay(20);
+//     motor_handler.Control_Motor(r, rightID, Acce, Brake_P, &Receiv);
+//     delay(50);
+// }
 
-
-
-void straightenFace(){  //OriHimeの顔を正面に向ける
-  Serial.println("SET_ORIHIME_HEAD_0.5,0.5"); // 頭
+void straightenFace()
+{                                               // OriHimeの顔を正面に向ける
+    Serial.println("SET_ORIHIME_HEAD_0.5,0.5"); // 頭
 }
 
-void currentSpeedUp(){
-    isQuickDashActive = true;
+void speedUp()
+{
+    QDash = true;
     Serial.println("Speed UP!!");
 
-    // forwardMaxSpeed = 160;    //OriHime-T仕様
-    forwardMaxSpeed = 120;   //OriHime-TX仕様
-    backwardMaxSpeed = 80;
-    rotationMaxSpeed = 40;
-    currentForwardSpeed = forwardMaxSpeed;
+    fwMaxSpeed = 160;
+    bkMaxSpeed = 80;
+    turnMaxSpeed = 40;
+    fwSpeed = fwMaxSpeed;
 }
 
-void currentSpeedDown(){
-    isQuickDashActive = false;
-    wasQuickDashActive = true;
-    Serial.println("Speed Down!!");    
+void speedDown()
+{
+    QDash = false;
+    lastQDash = true;
+    Serial.println("Speed Down!!");
 
-    // forwardMaxSpeed = 80;   //OriHime-T仕様
-    forwardMaxSpeed = 60;    //OriHime-TX仕様
-    backwardMaxSpeed = 50;
-    rotationMaxSpeed = 20;
+    fwMaxSpeed = 80;
+    bkMaxSpeed = 50;
+    turnMaxSpeed = 20;
 }
 
-
-
-void setup() {
-    // delay(3000);
+void setup()
+{
+    delay(3000);
     Serial.begin(19200);
     Serial2.begin(115200);
-    SerialBT.begin("OryArm", true); 
-    Serial.println("The device started in master mode, make sure remote BT device is on!");
-    
-    // Attempt to connect to the specified device
-    if(SerialBT.connect("OryArm")) { // ここで直接デバイス名を指定
-        Serial.println("Connected Successfully!");
-    } else {
-        Serial.println("Failed to connect. Make sure remote device is available and in range, then restart app.");
-      // No need to disconnect here; just attempt to reconnect or prompt for manual restart
-    }
+    Serial.println("DDT-Motor RS485");
 
-    
-    motor_handler.Control_Motor(0, leftMotorID, Acce, Brake_P, &Receiv);
-    motor_handler.Control_Motor(0, rightMotorID, Acce, Brake_P, &Receiv);
-    
+    motor_handler.Control_Motor(0, leftID, Acce, Brake_P, &Receiv);
+    motor_handler.Control_Motor(0, rightID, Acce, Brake_P, &Receiv);
+
     Serial.println(VERSION_NUMBER);
 }
 
-
-
-Action checkAction(String command) {
+Action checkAction(String command)
+{
     command.trim();
-    for (int i = 0; i < sizeof(ACTIONS); i += 1) {
-        if (command == ACTIONS[i].command) {
-        return ACTIONS[i];
+    for (int i = 0; i < sizeof(ACTIONS); i += 1)
+    {
+        if (command == ACTIONS[i].command)
+        {
+            return ACTIONS[i];
         }
     }
     return ACTIONS[0];
 }
 
-
-
-void loop() {
+void loop()
+{
     // Serial.println(spendTime);
 
     delay(5);
 
-    if (Serial.available()) {
+    if (Serial.available())
+    {
         String command = Serial.readStringUntil('\n');
         Action action = checkAction(command);
-        if (action.id == 0) return;
+        if (action.id == 0)
+            return;
 
-
-        if (action.id == ArrowPressUp) {
-            isForwardButtonPressed = true;
-            if (modeDDT == 3){
+        if (action.id == ArrowPressUp)
+        {
+            pushUpButton = true;
+            if (modeDDT == 3)
+            {
                 Serial.println("右斜前");
                 modeDDT = 5;
                 delay(10);
             }
-            else if (modeDDT == 4){
+            else if (modeDDT == 4)
+            {
                 Serial.println("左斜前");
                 modeDDT = 6;
                 delay(10);
             }
-            else {
+            else
+            {
                 Serial.println("前進");
                 modeDDT = 1;
                 lastModeDDT = 1;
                 straightenFace();
                 delay(10);
             }
-            
         }
 
-
-        if (action.id == ArrowPressDown) {
-            if (modeDDT == 3){
+        if (action.id == ArrowPressDown)
+        {
+            if (modeDDT == 3)
+            {
                 Serial.println("右斜後");
                 modeDDT = 7;
                 delay(10);
             }
-            else if (modeDDT == 4){
+            else if (modeDDT == 4)
+            {
                 Serial.println("左斜後");
                 modeDDT = 8;
                 delay(10);
             }
-            else {
+            else
+            {
                 Serial.println("後退");
                 modeDDT = 2;
                 delay(10);
             }
         }
 
-
-        if (action.id == ArrowPressRight) {
-            if(modeDDT == 1){
+        if (action.id == ArrowPressRight)
+        {
+            if (modeDDT == 1)
+            {
                 Serial.println("右斜前");
                 modeDDT = 5;
                 // lastModeDDT = 5;
                 delay(10);
             }
-            else if (modeDDT == 2){
+            else if (modeDDT == 2)
+            {
                 Serial.println("右斜後");
                 modeDDT = 7;
                 delay(10);
             }
-            else{
+            else
+            {
                 Serial.println("右回転");
                 modeDDT = 3;
                 lastModeDDT = 3;
@@ -288,20 +285,23 @@ void loop() {
             }
         }
 
-
-        if (action.id == ArrowPressLeft) {
-            if(modeDDT == 1){
+        if (action.id == ArrowPressLeft)
+        {
+            if (modeDDT == 1)
+            {
                 Serial.println("左斜前");
                 modeDDT = 6;
                 // lastModeDDT = 6;
                 delay(10);
             }
-            else if (modeDDT == 2){
+            else if (modeDDT == 2)
+            {
                 Serial.println("左斜後");
                 modeDDT = 8;
                 delay(10);
             }
-            else{
+            else
+            {
                 Serial.println("左回転");
                 modeDDT = 4;
                 lastModeDDT = 4;
@@ -309,347 +309,362 @@ void loop() {
             }
         }
 
+        if (action.id == ButtonPressA)
+        { //
+            // Serial.println("A-button");
+            Serial.println("Check version");
+            Serial.println(VERSION_NUMBER);
+            Serial.println("Check mode");
+            if (operationMode == 1)
+            {
+                Serial.println("直進モード有効");
+            }
+            else if (operationMode == 2)
+            {
+                Serial.println("直進モード無効");
+            }
+        }
 
-        if (action.id == ArrowOut) {
-            isForwardButtonPressed = false;
+        if (action.id == ButtonPressB)
+        {   //
+            // Serial.println("B-button");
+            operationMode = 1;
+            Serial.println("直進モード有効");
+        }
+
+        if (action.id == ButtonPressC)
+        {   //
+            // Serial.println("C-button");
+            operationMode = 2;
+            Serial.println("直進モード無効");
+        }
+
+        if (action.id == ButtonOut)
+        {
+        }
+
+        if (action.id == ArrowOut)
+        {
+            pushUpButton = false;
             spendTime = 0;
-            if (isQuickDashActive == true){
-                currentSpeedDown();
-            } else {
-                wasQuickDashActive = false;
-                isForwardSpeedLimited = false;
-                if (modeDDT == 1){
-                    SerialBT.write(10);
-                }
-
-                if (operationMode == 1){
-                    if(modeDDT == 0 || modeDDT == 2 || modeDDT == 3 || modeDDT == 4){
+            if (QDash == true)
+            {
+                speedDown();
+            }
+            else
+            {
+                lastQDash = false;
+                fwLimitSpeed = false;
+                if (operationMode == 1)
+                {
+                    if (modeDDT == 0 || modeDDT == 2 || modeDDT == 3 || modeDDT == 4)
+                    {
                         modeDDT = 0;
                         delay(10);
                     }
-                    else if (modeDDT == 5 || modeDDT == 6){
+                    else if (modeDDT == 5 || modeDDT == 6)
+                    {
                         modeDDT = 1;
                         lastModeDDT = 1;
                         delay(10);
                     }
-                    else if (modeDDT == 7 || modeDDT == 8){
+                    else if (modeDDT == 7 || modeDDT == 8)
+                    {
                         modeDDT = 2;
                         delay(10);
                     }
                 }
-                else if (operationMode == 2){
-                    if(modeDDT == 0 || modeDDT == 1 || modeDDT == 2 || modeDDT == 3 || modeDDT == 4){
+                else if (operationMode == 2)
+                {
+                    if (modeDDT == 0 || modeDDT == 1 || modeDDT == 2 || modeDDT == 3 || modeDDT == 4)
+                    {
                         modeDDT = 0;
                         lastModeDDT = 0;
                         delay(10);
                     }
-                    else if (modeDDT == 5 || modeDDT == 6){
+                    else if (modeDDT == 5 || modeDDT == 6)
+                    {
                         modeDDT = 1;
                         delay(10);
                     }
-                    else if (modeDDT == 7 || modeDDT == 8){
+                    else if (modeDDT == 7 || modeDDT == 8)
+                    {
                         modeDDT = 2;
                         delay(10);
                     }
                 }
-                SerialBT.write(11);
             }
         }
 
+        if (action.id == ArrowPressCenter)
+        {
 
-        if (action.id == ArrowPressCenter) {
-
-            if (modeDDT == 1 ||modeDDT == 3 || modeDDT == 4 || modeDDT == 5 || modeDDT == 6){
-                currentSpeedUp();
+            if (modeDDT == 1 || modeDDT == 3 || modeDDT == 4 || modeDDT == 5 || modeDDT == 6)
+            {
+                speedUp();
             }
-            else {
+            else
+            {
                 modeDDT = 0;
                 delay(20);
             }
         }
-
-
-
-
-
-        if (action.id == ButtonPressA) { //
-            // Serial.println("A-button");
-            SerialBT.write(49);
-            Serial.println("motion-1");
-        }
-
-
-        if (action.id == ButtonPressB) { //
-        // Serial.println("B-button");
-            SerialBT.write(50);
-            Serial.println("motion-2");
-        }
-
-
-        if (action.id == ButtonPressC) { //
-        // Serial.println("C-button");
-            SerialBT.write(51);
-            Serial.println("motion-3");
-        }
-
-
-        if (action.id == ButtonPressD) { //
-        // Serial.println("D-button");
-            SerialBT.write(52);
-            Serial.println("motion-4");
-        }
-
-        if (action.id == ButtonPressE) { //
-        // Serial.println("E-button");
-            SerialBT.write(53);
-            Serial.println("motion-5");
-        }
-
-
-
-
-        if (action.id == ButtonOut) {
-            SerialBT.write(0xff);
-        }
     }
 
+    if (modeDDT == 0)
+    {
+        if (flagR == true && flagL == false)
+        { // 前進
 
-
-    if (modeDDT == 0) {
-        if (rightMotorActive == true && leftMotorActive == false) {  //前進
-
-            if (currentSpeed > 75){
-                while (currentSpeed > 75){
-                    currentSpeed -= forwardDeceleration;
-                    moveDDT(leftMotorID, currentSpeed);
-                    moveDDT(rightMotorID, -currentSpeed);
+            if (Speed > 75)
+            {
+                while (Speed > 75)
+                {
+                    Speed -= fwBrakeAdd;
+                    moveDDT(leftID, Speed);
+                    moveDDT(rightID, -Speed);
                     // moveDDT(Speed, -Speed);
                 }
             }
-            if (75 > currentSpeed > 0){
-                while (currentSpeed > 0){
-                    currentSpeed -= 3;
-                    moveDDT(leftMotorID, currentSpeed);
-                    moveDDT(rightMotorID, -currentSpeed);
+            if (75 > Speed > 0)
+            {
+                while (Speed > 0)
+                {
+                    Speed -= 3;
+                    moveDDT(leftID, Speed);
+                    moveDDT(rightID, -Speed);
                     // moveDDT(Speed, -Speed);
                 }
             }
 
-            currentSpeed = 0;
-            moveDDT(leftMotorID, currentSpeed);
-            moveDDT(rightMotorID, currentSpeed);
-            // moveDDT(Speed, currentSpeed);
+            Speed = 0;
+            moveDDT(leftID, Speed);
+            moveDDT(rightID, Speed);
+            // moveDDT(Speed, Speed);
         }
 
-        if (rightMotorActive == false && leftMotorActive == true) { //後退
+        if (flagR == false && flagL == true)
+        { // 後退
 
-            while (currentSpeed > 0) {
-                currentSpeed -= Deceleration;
-                moveDDT(leftMotorID, -currentSpeed);
-                moveDDT(rightMotorID, currentSpeed);
-                // moveDDT(-Speed, currentSpeed);
+            while (Speed > 0)
+            {
+                Speed -= brakeAdd;
+                moveDDT(leftID, -Speed);
+                moveDDT(rightID, Speed);
+                // moveDDT(-Speed, Speed);
             }
 
-            currentSpeed = 0;
-            moveDDT(leftMotorID, currentSpeed);
-            moveDDT(rightMotorID, currentSpeed);
-            // moveDDT(Speed, currentSpeed);
+            Speed = 0;
+            moveDDT(leftID, Speed);
+            moveDDT(rightID, Speed);
+            // moveDDT(Speed, Speed);
         }
 
-        if (rightMotorActive == true && leftMotorActive == true) {  //右回転
+        if (flagR == true && flagL == true)
+        { // 右回転
 
-            while (currentSpeed > 0) {
-                currentSpeed -= Deceleration;
-                moveDDT(leftMotorID, -currentSpeed);
-                moveDDT(rightMotorID, currentSpeed);
-                // moveDDT(-Speed, currentSpeed);
+            while (Speed > 0)
+            {
+                Speed -= brakeAdd;
+                moveDDT(leftID, -Speed);
+                moveDDT(rightID, Speed);
+                // moveDDT(-Speed, Speed);
             }
 
-            currentSpeed = 0;
-            moveDDT(leftMotorID, currentSpeed);
-            moveDDT(rightMotorID, currentSpeed);
-            // moveDDT(Speed, currentSpeed);
+            Speed = 0;
+            moveDDT(leftID, Speed);
+            moveDDT(rightID, Speed);
+            // moveDDT(Speed, Speed);
         }
 
-        if (rightMotorActive == false && leftMotorActive == false) {  //左回転
+        if (flagR == false && flagL == false)
+        { // 左回転
 
-            while (currentSpeed > 0) {
-                currentSpeed -= Deceleration;
-                moveDDT(leftMotorID, -currentSpeed);
-                moveDDT(rightMotorID, -currentSpeed);
+            while (Speed > 0)
+            {
+                Speed -= brakeAdd;
+                moveDDT(leftID, -Speed);
+                moveDDT(rightID, -Speed);
                 // moveDDT(-Speed, -Speed);
             }
 
-            currentSpeed = 0;
-            moveDDT(leftMotorID, currentSpeed);
-            moveDDT(rightMotorID, currentSpeed);
-            // moveDDT(Speed, currentSpeed);
+            Speed = 0;
+            moveDDT(leftID, Speed);
+            moveDDT(rightID, Speed);
+            // moveDDT(Speed, Speed);
         }
-
     }
 
+    if (modeDDT == 1)
+    { // 前進
+        flagR = true;
+        flagL = false;
 
-
-
-    if (modeDDT == 1) {  //前進
-        rightMotorActive = true;
-        leftMotorActive = false;
-
-        if (wasQuickDashActive == true){
-            currentForwardSpeed -= dashDeceleration;
-            moveDDT(leftMotorID, currentForwardSpeed * 1.02);  //←いじらない
-            moveDDT(rightMotorID, -currentForwardSpeed);
-            // moveDDT(currentForwardSpeed * 1.02, -currentForwardSpeed);
-            if (currentForwardSpeed < forwardMaxSpeed){
-                currentForwardSpeed = forwardMaxSpeed;
-                isForwardSpeedLimited = true;
+        if (lastQDash == true)
+        {
+            fwSpeed -= dashDeceleration;
+            moveDDT(leftID, fwSpeed * 1.02); // ←いじらない
+            moveDDT(rightID, -fwSpeed);
+            // moveDDT(fwSpeed * 1.02, -fwSpeed);
+            if (fwSpeed < fwMaxSpeed)
+            {
+                fwSpeed = fwMaxSpeed;
+                fwLimitSpeed = true;
                 delay(20);
             }
         }
-        else {
-            currentSpeed += forwardAcceleration;
+        else
+        {
+            Speed += fwRunAdd;
 
-            moveDDT(leftMotorID, currentSpeed * 1.02);  //←いじらない
-            moveDDT(rightMotorID, -currentSpeed);
+            moveDDT(leftID, Speed * 1.02); // ←いじらない
+            moveDDT(rightID, -Speed);
             // moveDDT(Speed * 1.02, -Speed);
-            
 
-            if (currentSpeed > forwardMaxSpeed) {
-                currentSpeed = forwardMaxSpeed;
-                isForwardSpeedLimited = true;
+            if (Speed > fwMaxSpeed)
+            {
+                Speed = fwMaxSpeed;
+                fwLimitSpeed = true;
                 delay(20);
             }
         }
     }
 
-
-    if (modeDDT == 2) {  //後退
-        if (lastModeDDT == 1){
+    if (modeDDT == 2)
+    { // 後退
+        if (lastModeDDT == 1)
+        {
             modeDDT = 0;
             lastModeDDT = 2;
         }
-        else {
-            rightMotorActive = false;
-            leftMotorActive = true;
-            currentSpeed += backAcceleration;
+        else
+        {
+            flagR = false;
+            flagL = true;
+            Speed += runAdd;
 
-            moveDDT(leftMotorID, -currentSpeed);
-            moveDDT(rightMotorID, currentSpeed);
-            // moveDDT(-Speed, currentSpeed);
+            moveDDT(leftID, -Speed);
+            moveDDT(rightID, Speed);
+            // moveDDT(-Speed, Speed);
 
-            if (currentSpeed > backwardMaxSpeed) {
-                currentSpeed = backwardMaxSpeed;
+            if (Speed > bkMaxSpeed)
+            {
+                Speed = bkMaxSpeed;
                 delay(20);
             }
         }
     }
 
+    if (modeDDT == 3)
+    { // 右回転
+        flagR = true;
+        flagL = true;
+        Speed += turnAdd;
 
-    if (modeDDT == 3) {  //右回転
-        rightMotorActive = true;
-        leftMotorActive = true;
-        currentSpeed += turnAcceleration;
+        moveDDT(leftID, Speed);
+        moveDDT(rightID, Speed);
+        // moveDDT(Speed, Speed);
 
-        moveDDT(leftMotorID, currentSpeed);
-        moveDDT(rightMotorID, currentSpeed);
-        // moveDDT(Speed, currentSpeed);
-
-        if (currentSpeed > rotationMaxSpeed) {
-            currentSpeed = rotationMaxSpeed;
+        if (Speed > turnMaxSpeed)
+        {
+            Speed = turnMaxSpeed;
             delay(20);
         }
     }
 
+    if (modeDDT == 4)
+    { // 左回転
+        flagR = false;
+        flagL = false;
+        Speed += turnAdd;
 
-    if (modeDDT == 4) {  //左回転
-        rightMotorActive = false;
-        leftMotorActive = false;
-        currentSpeed += turnAcceleration;
-
-        moveDDT(leftMotorID, -currentSpeed);
-        moveDDT(rightMotorID, -currentSpeed);
+        moveDDT(leftID, -Speed);
+        moveDDT(rightID, -Speed);
         // moveDDT(-Speed, -Speed);
 
-        if (currentSpeed > rotationMaxSpeed) {
-            currentSpeed = rotationMaxSpeed;
+        if (Speed > turnMaxSpeed)
+        {
+            Speed = turnMaxSpeed;
             delay(20);
         }
     }
 
+    if (modeDDT == 5)
+    { // 右斜前
+        flagR = true;
+        flagL = true;
 
-    if (modeDDT == 5) {  //右斜前
-        rightMotorActive = true;
-        leftMotorActive = true;
+        Speed += fwTurnAdd;
 
-        
-        currentSpeed += forwardTurnAcceleration;
-
-        moveDDT(leftMotorID, currentSpeed);
-        moveDDT(rightMotorID, -currentSpeed*2/3);
+        moveDDT(leftID, Speed);
+        moveDDT(rightID, -Speed * 2 / 3);
         // moveDDT(Speed, -Speed*2/3);
 
-        if (currentSpeed > forwardMaxSpeed) {
-            currentSpeed = forwardMaxSpeed;
+        if (Speed > fwMaxSpeed)
+        {
+            Speed = fwMaxSpeed;
             delay(20);
         }
-        
     }
 
+    if (modeDDT == 6)
+    { // 左斜前
+        flagR = false;
+        flagL = false;
 
-    if (modeDDT == 6) {  //左斜前
-        rightMotorActive = false;
-        leftMotorActive = false;
+        Speed += fwTurnAdd;
 
-        currentSpeed += forwardTurnAcceleration;
-
-        moveDDT(leftMotorID, currentSpeed*2/3);
-        moveDDT(rightMotorID, -currentSpeed);
+        moveDDT(leftID, Speed * 2 / 3);
+        moveDDT(rightID, -Speed);
         // moveDDT(Speed*2/3, -Speed);
 
-        if (currentSpeed > forwardMaxSpeed) {
-            currentSpeed = forwardMaxSpeed;
-            delay(20);
-        
-        }
-    }
-
-
-    if (modeDDT == 7) {  //右斜後
-        rightMotorActive = true;
-        leftMotorActive = true;
-        currentSpeed += backAcceleration;
-
-        moveDDT(leftMotorID, -currentSpeed);
-        moveDDT(rightMotorID, currentSpeed/2);
-        // moveDDT(-Speed, currentSpeed/2);
-
-        if (currentSpeed > forwardMaxSpeed) {
-            currentSpeed = forwardMaxSpeed;
+        if (Speed > fwMaxSpeed)
+        {
+            Speed = fwMaxSpeed;
             delay(20);
         }
     }
 
+    if (modeDDT == 7)
+    { // 右斜後
+        flagR = true;
+        flagL = true;
+        Speed += runAdd;
 
-    if (modeDDT == 8) {  //左斜後
-        rightMotorActive = false;
-        leftMotorActive = false;
-        currentSpeed += backAcceleration;
+        moveDDT(leftID, -Speed);
+        moveDDT(rightID, Speed / 2);
+        // moveDDT(-Speed, Speed/2);
 
-        moveDDT(leftMotorID, -currentSpeed/2);
-        moveDDT(rightMotorID, currentSpeed);
-        // moveDDT(-Speed/2, currentSpeed);
-
-        if (currentSpeed > forwardMaxSpeed) {
-            currentSpeed = forwardMaxSpeed;
+        if (Speed > fwMaxSpeed)
+        {
+            Speed = fwMaxSpeed;
             delay(20);
         }
     }
 
-    if (isForwardButtonPressed == true){
+    if (modeDDT == 8)
+    { // 左斜後
+        flagR = false;
+        flagL = false;
+        Speed += runAdd;
+
+        moveDDT(leftID, -Speed / 2);
+        moveDDT(rightID, Speed);
+        // moveDDT(-Speed/2, Speed);
+
+        if (Speed > fwMaxSpeed)
+        {
+            Speed = fwMaxSpeed;
+            delay(20);
+        }
+    }
+
+    if (pushUpButton == true)
+    {
         spendTime++;
-        if (spendTime > changeModeTime){
+        if (spendTime > changeModeTime)
+        {
             operationMode = 2;
         }
     }
-
 }
